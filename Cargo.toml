@@ -2,14 +2,16 @@
 name = "project"
 version = "0.1.0"
 edition = "2021"
-author = "Hirew <hery.dannez@gmail.com>"
-about = "Auto create new project"
-long_about = "Create New Project automaticly with the help of the command line"
+authors = ["Hirew <hery.dannez@gmail.com>"]
+description = "Create New Project automaticly with the help of the command line !"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
 name = "project"
+
+[env]
+
 
 [dependencies.clap]
 version = "3.2.1"

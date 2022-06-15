@@ -13,27 +13,20 @@ struct Args {
     #[clap(short, long, value_parser)]
     language: String,
     // Path
-    #[clap(short, long, value_parser)]
-    path: Option<std::path::PathBuf>,
+    #[clap(short, long, value_parser, default_value = "./")]
+    path: String,
     // Verbose
-    #[clap(short, long, value_enum)]
+    #[clap(short, long, value_enum, default_value = "true")]
     verbose: Bool,
     // Git
-    #[clap(short, long, value_enum)]
+    #[clap(short, long, value_enum, default_value = "true")]
     git: Bool,
-    #[clap(short, long, value_enum)]
+    #[clap(short, long, value_enum, default_value = "true")]
     code: Bool,
 }
 
 impl Args {
-    fn new(
-        name: &str,
-        language: &str,
-        path: Option<std::path::PathBuf>,
-        git: Bool,
-        verbose: Bool,
-        code: Bool,
-    ) -> Args {
+    fn new(name: &str, language: &str, path: String, git: Bool, verbose: Bool, code: Bool) -> Args {
         Args {
             name: name.to_string(),
             language: language.to_string(),
@@ -92,12 +85,12 @@ fn git(args: Args) {
     let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
     std::thread::spawn(move || print_flush("Creating git repository", rx, tx2));
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("init")
         .output()
         .expect("failed to execute process");
     std::process::Command::new("gh")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("repo")
         .arg("create")
         .arg(args.name.as_str())
@@ -115,20 +108,20 @@ fn git(args: Args) {
         }
     }
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("add")
         .arg(".")
         .output()
         .expect("failed to execute process");
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("branch")
         .arg("-M")
         .arg("main")
         .output()
         .expect("failed to execute process");
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("remote")
         .arg("add")
         .arg("origin")
@@ -140,14 +133,14 @@ fn git(args: Args) {
         .output()
         .expect("failed to execute process");
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("commit")
         .arg("-m")
         .arg("Initial Commit")
         .output()
         .expect("failed to execute process");
     std::process::Command::new("git")
-        .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+        .current_dir(args.path.as_str().to_owned() + &args.name)
         .arg("push")
         .arg("-u")
         .arg("origin")
@@ -178,18 +171,13 @@ fn main() {
             let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             std::thread::spawn(move || print_flush("Running cargo", rx, tx2));
             std::process::Command::new("cargo")
-                .current_dir(args.path.as_ref().unwrap())
+                .current_dir(args.path.as_str().to_owned())
                 .arg("new")
                 .arg(args.name.as_str())
                 .output()
                 .expect("failed to execute process");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("README.md"),
+                args.path.as_str().to_owned() + &args.name + "README.md",
                 include_str!("../templates/README.md")
                     .replace("()", args.language.as_ref())
                     .replace("{}", args.name.as_str()),
@@ -207,49 +195,27 @@ fn main() {
             let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             std::thread::spawn(move || print_flush("Creating dir", rx, tx2));
             use std::fs::File;
-            std::fs::create_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+            std::fs::create_dir(args.path.as_str().to_owned() + &args.name)
                 .expect("failed to create directory");
             tx.clone().send(true).unwrap();
             rx2.recv().unwrap();
             let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             std::thread::spawn(move || print_flush("Creating files", rx, tx2));
-            _ = File::create(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("main.cpp"),
-            )
-            .expect("failed to create file");
+            _ = File::create(args.path.as_str().to_owned() + &args.name + "main.cpp")
+                .expect("failed to create file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("main.cpp"),
+                args.path.as_str().to_owned() + &args.name + "main.cpp",
                 include_str!("../templates/main.cpp").as_bytes(),
             )
             .expect("failed to write to file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join(".gitignore"),
+                args.path.as_str().to_owned() + &args.name + ".gitignore",
                 include_str!("../templates/cpp.gitignore").as_bytes(),
             )
             .expect("failed to write to file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("README.md"),
+                args.path.as_str().to_owned() + &args.name + "README.md",
                 include_str!("../templates/README.md")
                     .replace("()", args.language.as_ref())
                     .replace("{}", args.name.as_str()),
@@ -266,56 +232,34 @@ fn main() {
             let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             std::thread::spawn(move || print_flush("Creating dir", rx, tx2));
             use std::fs::File;
-            std::fs::create_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+            std::fs::create_dir(args.path.as_str().to_owned() + &args.name)
                 .expect("failed to create directory");
             tx.clone().send(true).unwrap();
             rx2.recv().unwrap();
             let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             let (tx2, rx2): (Sender<bool>, Receiver<bool>) = mpsc::channel();
             std::thread::spawn(move || print_flush("Creating files", rx, tx2));
-            _ = File::create(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("main.go"),
-            )
-            .expect("failed to create file");
+            _ = File::create(args.path.as_str().to_owned() + &args.name + "main.go")
+                .expect("failed to create file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("main.go"),
+                args.path.as_str().to_owned() + &args.name + "main.go",
                 (include_str!("../templates/main.go").replace("{}", args.name.as_str())).as_bytes(),
             )
             .expect("failed to write to file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join(".gitignore"),
+                args.path.as_str().to_owned() + &args.name + ".gitignore",
                 include_str!("../templates/go.gitignore").as_bytes(),
             )
             .expect("failed to write to file");
             std::fs::write(
-                &args
-                    .path
-                    .as_ref()
-                    .unwrap()
-                    .join(args.name.as_str())
-                    .join("README.md"),
+                args.path.as_str().to_owned() + &args.name + "README.md",
                 include_str!("../templates/README.md")
                     .replace("()", args.language.as_ref())
                     .replace("{}", args.name.as_str()),
             )
             .expect("failed to write to file");
             std::process::Command::new("go")
-                .current_dir(args.path.as_ref().unwrap().join(args.name.as_str()))
+                .current_dir(args.path.as_str().to_owned() + &args.name)
                 .arg("mod")
                 .arg("init")
                 .arg(args.name.as_str())
@@ -334,14 +278,23 @@ fn main() {
     }
     if args.code.to_bool() {
         std::process::Command::new(CODE)
-            .args(&args.path.as_ref().unwrap().join(args.name.as_str()))
+            .arg(args.path.as_str().to_owned() + &args.name)
+            .arg("--reuse-window")
             .output()
             .expect("failed to execute process");
     }
+    use std::env::var;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(var("PROJECTS").unwrap())
+        .unwrap();
+    let contents = args.name.clone().to_owned() + "{{}}" + &args.path;
+    file.write_all(contents.as_bytes()).unwrap();
     println!(
         "Project {} created in {}",
         args.name.green(),
-        args.path.unwrap().to_str().unwrap().italic()
+        args.path.as_str().to_owned().italic()
     );
 }
 use crossterm::{
