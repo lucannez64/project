@@ -239,6 +239,16 @@ fn main() {
                     .as_ref()
                     .unwrap()
                     .join(args.name.as_str())
+                    .join(".gitignore"),
+                include_str!("../templates/cpp.gitignore").as_bytes(),
+            )
+            .expect("failed to write to file");
+            std::fs::write(
+                &args
+                    .path
+                    .as_ref()
+                    .unwrap()
+                    .join(args.name.as_str())
                     .join("README.md"),
                 include_str!("../templates/README.md")
                     .replace("()", args.language.as_ref())
@@ -280,6 +290,16 @@ fn main() {
                     .join(args.name.as_str())
                     .join("main.go"),
                 (include_str!("../templates/main.go").replace("{}", args.name.as_str())).as_bytes(),
+            )
+            .expect("failed to write to file");
+            std::fs::write(
+                &args
+                    .path
+                    .as_ref()
+                    .unwrap()
+                    .join(args.name.as_str())
+                    .join(".gitignore"),
+                include_str!("../templates/go.gitignore").as_bytes(),
             )
             .expect("failed to write to file");
             std::fs::write(
